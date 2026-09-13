@@ -1,44 +1,100 @@
 import os
 import requests
-import googlemaps
 from dotenv import load_dotenv
+from supabase import create_client
 
-# Cargar variables de entorno del archivo .env
+
+# Load variables from .env
 load_dotenv()
 
-api_key = os.getenv("GOOGLE_MAPS_API")
+def test_supabase():
+    try:
+        url = os.getenv("SUPABASE_URL")
+        key = os.getenv("SUPABASE_SECRET_KEY")
 
-# Parámetros de la consulta
-origen = "Monterrey,NL"
-destino = "Cadereyta Jimenez,NL"
+        if not url or not key:
+            print("Supabase: ❌ missing credentials")
+            return
 
-url = f"https://maps.googleapis.com/maps/api/distancematrix/json?origins={origen}&destinations={destino}&key={api_key}"
+        url = url.rstrip("/")
 
-response = requests.get(url)
-data = response.json()
+        if url.endswith("/rest/v1"):
+            url = url[:-8]
 
-# Extraer tiempo y distancia de la respuesta JSON
-if data["status"] == "OK":
-    element = data["rows"][0]["elements"][0]
-    distancia = element["distance"]["text"]
-    duracion = element["duration"]["text"]
-    
-    print(f"Distancia: {distancia}")
-    print(f"Tiempo estimado: {duracion}")
+        supabase = create_client(url, key)
 
-# Inicializar cliente de Google Maps
-gmaps = googlemaps.Client(key=os.getenv("GOOGLE_MAPS_API"))
+        print("Supabase: works :)")
 
-# Obtener direcciones entre dos coordenadas o direcciones escritas
-directions_result = gmaps.directions(
-    "Tec de Monterrey, Monterrey, NL",
-    "Parque Fundidora, Monterrey, NL",
-    mode="driving"
-)
+    except Exception as e:
+        print(f"Supabase: ❌ {e}")
 
-# Extraer la distancia y duración de la primera ruta
-leg = directions_result[0]["legs"][0]
-print(f"De: {leg['start_address']}")
-print(f"A: {leg['end_address']}")
-print(f"Distancia: {leg['distance']['text']}")
-print(f"Duración en tráfico: {leg['duration']['text']}")
+def test_google_maps():
+    try:
+        api_key = os.getenv("GOOGLE_MAPS_API")
+
+        if not api_key:
+            print("Google Maps: ❌ missing API key")
+            return
+
+        # Test Directions API with two locations.
+        url = "https://maps.googleapis.com/maps/api/directions/json"
+
+        params = {
+            "origin": "Monterrey, Mexico",
+            "destination": "San Pedro Garza Garcia, Mexico",
+            "key": api_key,
+        }
+
+        response = requests.get(url, params=params, timeout=10)
+        data = response.json()
+
+        if data.get("status") == "OK":
+            print("Google Maps: works :)")
+        else:
+            print(f"Google Maps: ❌ {data.get('status')}")
+            print(f"Details: {data.get('error_message', 'No additional information')}")
+
+    except Exception as e:
+        print(f"Google Maps: ❌ {e}")
+
+
+def test_openweather():
+    try:
+        api_key = os.getenv("OPENWEATHER_API_KEY")
+
+        if not api_key:
+            print("OpenWeather: ❌ missing API key")
+            return
+
+        # Monterrey coordinates
+        url = "https://api.openweathermap.org/data/2.5/weather"
+
+        params = {
+            "lat": 25.6866,
+            "lon": -100.3161,
+            "appid": api_key,
+            "units": "metric",
+        }
+
+        response = requests.get(url, params=params, timeout=10)
+        data = response.json()
+
+        if response.status_code == 200:
+            print("OpenWeather: works :)")
+        else:
+            print(f"OpenWeather: ❌ {response.status_code}")
+            print(f"Details: {data}")
+
+    except Exception as e:
+        print(f"OpenWeather: ❌ {e}")
+
+
+print("\n==============================")
+print("   API CONNECTION TEST")
+print("==============================\n")
+
+test_supabase()
+test_google_maps()
+test_openweather()
+
+print("\n==============================")
