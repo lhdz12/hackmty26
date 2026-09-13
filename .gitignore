@@ -86,3 +86,8 @@ Thumbs.db
 *.temp
 *.swp
 *.swo
+
+venv/
+__pycache__/
+.env
+*.pyc
